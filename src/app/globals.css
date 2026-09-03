@@ -41,6 +41,25 @@ input, button, select, textarea, span, p, h1, h2, h3, h4, h5, h6, label, a, th, 
   animation: moving-background-color 6s ease-in-out infinite;
 }
 
+/* Sleek Dark Scrollbar for Sidebar */
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+.sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
+
 /* Print Certificate Rules */
 @media print {
   body {

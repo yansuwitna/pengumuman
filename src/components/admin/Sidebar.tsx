@@ -80,9 +80,10 @@ export default function Sidebar({
   };
 
   const NavContent = () => (
-    <div className="flex flex-col justify-between h-full">
-      <div>
-        <div className="mb-6 flex items-center justify-between">
+    <div className="flex flex-col justify-between h-full min-h-0 overflow-hidden">
+      {/* Bagian Atas: Header & User Info (Tetap Diam / No Shrink) */}
+      <div className="shrink-0 mb-3">
+        <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-blue-600 rounded-2xl shadow-md shadow-blue-600/30">
               <ShieldAlert className="w-5 h-5 text-white" />
@@ -103,41 +104,43 @@ export default function Sidebar({
 
         {/* User Info Pill */}
         {session && (
-          <div className="mb-5 p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs">
+          <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs shrink-0">
               <User className="w-3.5 h-3.5" />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-slate-200 truncate">{session.name || session.username}</p>
-              <p className="text-[10px] text-emerald-400 font-medium font-mono">@{session.username}</p>
+              <p className="text-[10px] text-emerald-400 font-medium font-mono truncate">@{session.username}</p>
             </div>
           </div>
         )}
-
-        <nav className="space-y-1.5 text-sm font-medium">
-          {links.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-3.5 py-3 rounded-xl transition ${
-                  isActive
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/20 font-bold"
-                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? "text-white" : item.color}`} />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
       </div>
 
-      <div className="border-t border-slate-800 pt-4 space-y-2">
+      {/* Bagian Tengah: Daftar Menu dengan Scroll Mandiri (overflow-y-auto) */}
+      <nav className="flex-1 min-h-0 overflow-y-auto sidebar-scrollbar space-y-1.5 text-sm font-medium pr-1 py-1">
+        {links.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3 px-3.5 py-3 rounded-xl transition ${
+                isActive
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-600/20 font-bold"
+                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
+              }`}
+            >
+              <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : item.color}`} />
+              <span className="truncate">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Bagian Bawah: Link Publik & Logout (Tetap Diam di Bawah / No Shrink) */}
+      <div className="shrink-0 border-t border-slate-800 pt-3 mt-3 space-y-2">
         <Link
           href="/"
           target="_blank"
@@ -191,15 +194,15 @@ export default function Sidebar({
 
       {/* Mobile Slide-over Drawer Content */}
       <div
-        className={`lg:hidden fixed inset-y-0 left-0 w-72 bg-slate-900 text-white p-5 z-50 transform transition-transform duration-300 ease-in-out shadow-2xl ${
+        className={`lg:hidden fixed inset-y-0 left-0 w-72 bg-slate-900 text-white p-5 z-50 transform transition-transform duration-300 ease-in-out shadow-2xl h-screen overflow-hidden ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <NavContent />
       </div>
 
-      {/* Desktop Persistent Sidebar */}
-      <aside className="hidden lg:flex w-64 bg-slate-900 text-white min-h-screen p-5 flex-col justify-between border-r border-slate-800 shrink-0 sticky top-0 h-screen">
+      {/* Desktop Persistent Fixed Sidebar (100% Diam / Fixed di Layar Kiri) */}
+      <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 bg-slate-900 text-white h-screen p-5 flex-col justify-between border-r border-slate-800 shrink-0 overflow-hidden z-30">
         <NavContent />
       </aside>
     </>

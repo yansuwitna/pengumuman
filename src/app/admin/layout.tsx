@@ -15,11 +15,13 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-slate-100 font-sans">
+    <div className="min-h-screen bg-slate-100 font-sans flex flex-col">
       <Sidebar session={session} />
-      <main className="flex-1 min-w-0 w-full p-4 sm:p-6 md:p-8 lg:p-10 overflow-y-auto">
-        {children}
-      </main>
+      <div className="lg:pl-64 flex-1 flex flex-col min-w-0 w-full">
+        <main className="flex-1 w-full max-w-full p-4 sm:p-6 md:p-8 lg:p-10">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
