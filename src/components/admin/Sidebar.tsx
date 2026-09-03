@@ -11,6 +11,7 @@ import {
   ListFilter,
   Users,
   KeyRound,
+  Database,
   ExternalLink,
   ShieldAlert,
   LogOut,
@@ -51,6 +52,12 @@ export default function Sidebar({
       label: "Data Peserta & Kelulusan",
       icon: Users,
       color: "text-amber-400",
+    },
+    {
+      href: "/admin/backup",
+      label: "Backup & Reset Data",
+      icon: Database,
+      color: "text-purple-400",
     },
     {
       href: "/admin/change-password",

@@ -14,6 +14,8 @@ Aplikasi web modern, elegan, dan responsif untuk menampilkan informasi hasil sel
 - 🛡️ **Panel Admin Responsif**: Dilengkapi *slide-over drawer menu* untuk smartphone dan dialog konfirmasi **SweetAlert2** sebelum data disimpan atau dihapus.
 - 📄 **Cetak Surat / Sertifikat Kelulusan Digital**: Peserta dapat langsung mencetak bukti kelulusan berstempel resmi ke format **PDF / Printer**.
 - 📊 **Impor Massal Excel & Unduh Template**: Tambah ratusan data peserta secara instan melalui file Excel yang kolomnya otomatis mengikuti konfigurasi kolom dinamis.
+- 💾 **Backup & Restore Data Lengkap**: Ekspor dan impor seluruh data peserta, kolom validasi, serta konfigurasi aplikasi dalam satu file JSON mandiri.
+- 🔄 **Hapus Semua Data & Reset Factory**: Kosongkan semua data peserta dan kembalikan setelan aplikasi ke kondisi awal secara aman tanpa menghapus akun administrator.
 - 🔐 **Keamanan Terpadu**: Autentikasi sesi admin dengan hashing aman (PBKDF2) dan proteksi rute admin.
 
 ---
@@ -118,11 +120,11 @@ pks/
 │   ├── schema.prisma       # Skema database SQLite (AppSetting, ValidationField, Participant, UserAdmin)
 │   └── seed.ts             # Script inisialisasi akun admin & data default
 ├── src/
-│   ├── actions/            # Server Actions (auth, field, participant, setting, search)
+│   ├── actions/            # Server Actions (auth, field, participant, setting, search, maintenance)
 │   ├── app/
 │   │   ├── (public)/       # Halaman utama publik & pencarian kelulusan
-│   │   ├── admin/          # Halaman Panel Admin (login, settings, validation-fields, participants, password)
-│   │   ├── api/            # API Route generator template Excel dinamis
+│   │   ├── admin/          # Halaman Panel Admin (dashboard, settings, validation-fields, participants, backup, password)
+│   │   ├── api/            # API Routes (template-excel, backup)
 │   │   ├── globals.css     # CSS global, font Poppins, styling cetak PDF
 │   │   └── layout.tsx      # Root Layout aplikasi
 │   ├── components/

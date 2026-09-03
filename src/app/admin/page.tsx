@@ -19,6 +19,7 @@ import {
   ArrowRight,
   Sparkles,
   Calendar,
+  Database,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -282,6 +283,22 @@ export default async function AdminDashboardPage() {
                 </div>
               </div>
               <ArrowRight className="w-4 h-4 text-blue-600 group-hover:translate-x-1 transition" />
+            </Link>
+
+            <Link
+              href="/admin/backup"
+              className="flex items-center justify-between p-3 rounded-2xl border border-purple-200/80 bg-purple-50/50 hover:bg-purple-100/70 transition group"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-purple-600 text-white">
+                  <Database className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900">Backup & Reset Data</p>
+                  <p className="text-[10px] text-slate-500">Ekspor, restore & factory reset</p>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-purple-600 group-hover:translate-x-1 transition" />
             </Link>
 
             <Link

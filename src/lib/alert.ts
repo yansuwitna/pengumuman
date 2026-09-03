@@ -58,4 +58,31 @@ export const showAlert = {
       },
     });
   },
+  promptConfirm: async (title: string, htmlText: string, confirmWord: string = "RESET") => {
+    return await Swal.fire({
+      title,
+      html: htmlText,
+      icon: "warning",
+      input: "text",
+      inputPlaceholder: `Ketik "${confirmWord}" di sini untuk konfirmasi`,
+      showCancelButton: true,
+      confirmButtonColor: "#e11d48",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: "Ya, Lakukan Reset",
+      cancelButtonText: "Batal",
+      reverseButtons: true,
+      inputValidator: (value) => {
+        if (!value || value.trim().toUpperCase() !== confirmWord.toUpperCase()) {
+          return `Anda harus mengetik "${confirmWord}" secara tepat untuk melanjutkan!`;
+        }
+      },
+      customClass: {
+        popup: "font-sans rounded-3xl p-6",
+        input: "font-mono text-center uppercase tracking-widest font-bold text-sm px-4 py-2.5 border border-slate-300 rounded-xl my-3",
+        confirmButton: "font-sans font-bold px-5 py-2.5 rounded-xl text-xs",
+        cancelButton: "font-sans font-bold px-5 py-2.5 rounded-xl text-xs",
+      },
+    });
+  },
 };
+
