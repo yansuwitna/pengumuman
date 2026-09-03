@@ -1,0 +1,65 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. Pengaturan Umum Aplikasi & Nama Kegiatan
+model AppSetting {
+  id                 String    @id @default("default")
+  appName            String    @default("PORTAL PENGUMUMAN")
+  activityName       String    @default("Hasil Seleksi Penerimaan Calon Pegawai 2026")
+  activityDesc       String?   @default("Masukkan data verifikasi Anda untuk melihat status kelulusan.")
+  isAnnouncementOpen Boolean   @default(true)
+  announcementDate   String?   // Tanggal & Jam Buka Pengumuman (format ISO / datetime-local string)
+  announcementMode   String    @default("OPEN") // "OPEN" (Buka), "SCHEDULED" (Jadwal Otomatis), "CLOSED" (Tutup)
+  passedMessage      String?   @default("Selamat! Anda dinyatakan LULUS seleksi.")
+  failedMessage      String?   @default("Mohon maaf, Anda belum memenuhi kualifikasi pada tahap ini. Tetap semangat!")
+  contactInfo        String?   @default("Hubungi Panitia: helpdesk@instansi.go.id | 0812-3456-7890")
+  updatedAt          DateTime  @updatedAt
+}
+
+// 2. Konfigurasi Kolom Dinamis (Validasi & Informasi Tambahan / Biodata)
+model ValidationField {
+  id              String   @id @default(uuid())
+  fieldKey        String   @unique // Contoh: "nisn", "nis", "nama", "asal_sekolah", "jurusan"
+  label           String           // Contoh: "NISN", "Nama Lengkap", "Asal Sekolah"
+  placeholder     String?
+  fieldType       String   @default("text") // text, number, date, password
+  category        String   @default("VALIDATION") // "VALIDATION" (Kunci Cek Depan) | "DISPLAY" (Informasi/Biodata Hasil)
+  showOnResult    Boolean  @default(true) // Tampilkan pada kartu sertifikat pengumuman
+  isRequired      Boolean  @default(true)
+  isCaseSensitive Boolean  @default(false)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// 3. Data Peserta & Hasil Kelulusan
+model Participant {
+  id             String   @id @default(uuid())
+  name           String
+  position       String?  // Formasi / Jurusan / Posisi
+  status         String   // LULUS | TIDAK_LULUS
+  score          Float?   // Nilai Wawancara / Ujian
+  notes          String?  // Catatan jadwal briefing / daftar ulang
+  validationData String   // JSON format string menyimpan semua custom key-value
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status])
+}
+
+// 4. Akun Administrator
+model UserAdmin {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  name      String   @default("Administrator")
+  role      String   @default("ADMIN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
