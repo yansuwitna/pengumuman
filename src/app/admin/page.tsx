@@ -224,9 +224,9 @@ export default async function AdminDashboardPage() {
             </div>
           </div>
 
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-500 gap-2">
             <span>Aplikasi: <strong>{setting?.appName}</strong></span>
-            <span>Instansi: <strong>{setting?.institutionName}</strong></span>
+            <span>Kontak: <strong>{setting?.contactInfo || "-"}</strong></span>
           </div>
         </div>
 
