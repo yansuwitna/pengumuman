@@ -479,11 +479,12 @@ export default function BackupMaintenancePage() {
 
           <button
             onClick={handleResetToDefault}
-            disabled={resetting}
-            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold text-xs sm:text-sm transition shadow-md shrink-0 cursor-pointer ${
+            disabled={!hasBackedUp || resetting}
+            title={!hasBackedUp ? "Silakan klik tombol 'Unduh File Backup JSON' di atas terlebih dahulu untuk mengaktifkan tombol ini" : "Klik untuk mereset data"}
+            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-bold text-xs sm:text-sm transition shrink-0 ${
               hasBackedUp
-                ? "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/20 active:scale-[0.98]"
-                : "bg-rose-300 text-rose-800 hover:bg-rose-400 cursor-pointer"
+                ? "bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/30 active:scale-[0.98] cursor-pointer"
+                : "bg-slate-200 text-slate-400 border border-slate-300 cursor-not-allowed opacity-75 shadow-none"
             }`}
           >
             {resetting ? (
@@ -498,8 +499,8 @@ export default function BackupMaintenancePage() {
               </>
             ) : (
               <>
-                <Lock className="w-4 h-4" />
-                <span>Hapus & Reset (Wajib Backup Dahulu)</span>
+                <Lock className="w-4 h-4 text-slate-400" />
+                <span>Tombol Terkunci (Unduh Backup Dahulu)</span>
               </>
             )}
           </button>
