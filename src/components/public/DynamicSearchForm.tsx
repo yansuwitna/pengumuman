@@ -130,7 +130,7 @@ export default function DynamicSearchForm({
       <form
         onSubmit={handleSubmit}
         noValidate
-        className="bg-white/95 backdrop-blur-xl p-5 sm:p-8 md:p-10 rounded-3xl shadow-xl shadow-blue-950/5 border border-slate-200/90 space-y-5 sm:space-y-6"
+        className="bg-white/90 backdrop-blur-2xl p-6 sm:p-9 md:p-11 rounded-[2.2rem] shadow-2xl shadow-blue-950/5 border border-white/90 space-y-5 sm:space-y-6"
       >
         {/* Header Form Bersih & Jelas */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 sm:pb-5 gap-3">

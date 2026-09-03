@@ -75,7 +75,7 @@ export default function ClosedAnnouncementCard({
 
   return (
     <div className="relative w-full max-w-2xl mx-auto animate-in fade-in zoom-in-95 duration-500">
-      <div className="bg-white/95 backdrop-blur-xl p-6 sm:p-10 rounded-3xl shadow-2xl shadow-blue-950/10 border border-slate-200/90 text-center space-y-6">
+      <div className="bg-white/90 backdrop-blur-2xl p-6 sm:p-10 rounded-[2.2rem] shadow-2xl shadow-blue-950/5 border border-white/90 text-center space-y-6">
         {/* Icon & Status Banner */}
         <div className="flex flex-col items-center">
           <div

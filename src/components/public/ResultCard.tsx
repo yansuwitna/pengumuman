@@ -30,7 +30,7 @@ export default function ResultCard({
 
   return (
     <div className="relative w-full animate-in fade-in zoom-in-95 duration-500">
-      <div className="relative bg-white rounded-3xl shadow-2xl shadow-blue-900/10 border border-slate-200/90 overflow-hidden print-card">
+      <div className="relative bg-white/95 backdrop-blur-2xl rounded-[2.2rem] shadow-2xl shadow-blue-900/10 border border-white/90 overflow-hidden print-card">
         {/* Top Header Banner */}
         <div
           className={`p-6 sm:p-8 md:p-10 text-center text-white relative overflow-hidden ${
