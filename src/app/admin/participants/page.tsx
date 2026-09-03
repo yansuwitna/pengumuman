@@ -13,6 +13,7 @@ import {
   Users,
   Plus,
   Trash2,
+  Pencil,
   Download,
   Upload,
   CheckCircle,
@@ -22,7 +23,6 @@ import {
   Search,
   KeyRound,
   FileText,
-  Sliders,
 } from "lucide-react";
 import Link from "next/link";
 import { ValidationFieldType } from "@/types";
@@ -33,6 +33,7 @@ export default function ParticipantsPage() {
   const [validationFields, setValidationFields] = useState<ValidationFieldType[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingParticipant, setEditingParticipant] = useState<any | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,11 +53,22 @@ export default function ParticipantsPage() {
     fetchData();
   }, []);
 
-  const handleAddParticipant = async (e: React.FormEvent<HTMLFormElement>) => {
+  const openAddModal = () => {
+    setEditingParticipant(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (p: any) => {
+    setEditingParticipant(p);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveParticipant = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
     const status = formData.get("status") as string;
+    const isEdit = !!editingParticipant;
 
     const valDataObj: Record<string, string> = {};
     for (const field of validationFields) {
@@ -74,9 +86,9 @@ export default function ParticipantsPage() {
       "Peserta";
 
     const confirm = await showAlert.confirm(
-      "Konfirmasi Simpan Peserta",
-      `Apakah Anda yakin ingin menyimpan data peserta '${previewName}' dengan status '${status}'?`,
-      "Ya, Simpan Peserta"
+      isEdit ? "Konfirmasi Ubah Data Peserta" : "Konfirmasi Simpan Peserta",
+      `Apakah Anda yakin ingin ${isEdit ? "memperbarui" : "menyimpan"} data peserta '${previewName}' dengan status '${status}'?`,
+      isEdit ? "Ya, Simpan Perubahan" : "Ya, Simpan Peserta"
     );
 
     if (!confirm.isConfirmed) return;
@@ -85,9 +97,13 @@ export default function ParticipantsPage() {
     try {
       const res = await createParticipant(formData);
       if (res.success) {
-        showAlert.success("Berhasil Disimpan!", `Data peserta '${previewName}' berhasil disimpan ke database.`);
+        showAlert.success(
+          isEdit ? "Berhasil Diperbarui!" : "Berhasil Disimpan!",
+          `Data peserta '${previewName}' berhasil disimpan ke database.`
+        );
         form.reset();
         setIsModalOpen(false);
+        setEditingParticipant(null);
         await fetchData();
       } else {
         showAlert.error("Gagal Menyimpan", "Periksa kembali data peserta.");
@@ -178,6 +194,14 @@ export default function ParticipantsPage() {
   const verificationFields = validationFields.filter((f) => (f.category || "VALIDATION") === "VALIDATION");
   const displayFields = validationFields.filter((f) => f.category === "DISPLAY");
 
+  // Parse JSON data peserta yang sedang diedit
+  let editingValJson: Record<string, any> = {};
+  if (editingParticipant) {
+    try {
+      editingValJson = JSON.parse(editingParticipant.validationData || "{}");
+    } catch {}
+  }
+
   return (
     <div className="space-y-6 sm:space-y-8 w-full">
       {/* Header & Quick Action */}
@@ -191,7 +215,7 @@ export default function ParticipantsPage() {
             Data Peserta & Kelulusan
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Seluruh kolom data peserta di bawah ini murni mengikuti konfigurasi yang terdaftar di Pengaturan Kolom.
+            Kelola, edit, atau tambah data peserta hasil seleksi dan status kelulusan.
           </p>
         </div>
 
@@ -205,7 +229,7 @@ export default function ParticipantsPage() {
           />
 
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={openAddModal}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-xs sm:text-sm font-bold transition shadow-md shadow-amber-600/20 cursor-pointer shrink-0"
           >
             <Plus className="w-4 h-4" />
@@ -235,7 +259,7 @@ export default function ParticipantsPage() {
         </div>
       </div>
 
-      {/* Tabel Data Peserta yang 100% Mengikuti Setting Kolom */}
+      {/* Tabel Data Peserta */}
       <div className="w-full bg-white p-5 sm:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
           <div>
@@ -243,7 +267,7 @@ export default function ParticipantsPage() {
               Daftar Peserta Terdaftar ({participants.length} Orang)
             </h2>
             <p className="text-[11px] text-slate-400">
-              Menampilkan {validationFields.length} kolom sesuai daftar pada menu Setting Kolom.
+              Klik tombol pensil biru untuk mengubah data atau status peserta.
             </p>
           </div>
 
@@ -359,13 +383,25 @@ export default function ParticipantsPage() {
                       </td>
 
                       <td className="py-4 px-4 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => handleDeleteParticipant(p.id, p.name)}
-                          className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition cursor-pointer"
-                          title="Hapus Data Peserta"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Tombol Edit Peserta */}
+                          <button
+                            onClick={() => openEditModal(p)}
+                            className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-xl transition cursor-pointer"
+                            title="Ubah Data Peserta"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+
+                          {/* Tombol Hapus Peserta */}
+                          <button
+                            onClick={() => handleDeleteParticipant(p.id, p.name)}
+                            className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition cursor-pointer"
+                            title="Hapus Data Peserta"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -376,23 +412,36 @@ export default function ParticipantsPage() {
         )}
       </div>
 
-      {/* MODAL POP-UP TAMBAH PESERTA MANUAL (MURNI MENGIKUTI SETTING KOLOM) */}
+      {/* MODAL POP-UP TAMBAH / UBAH PESERTA */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
             {/* Header Modal */}
             <div className="flex items-center justify-between p-5 sm:p-6 border-b border-slate-100 bg-slate-50/60 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-amber-100 text-amber-700 rounded-xl">
-                  <Plus className="w-5 h-5" />
+                <div
+                  className={`p-2 rounded-xl ${
+                    editingParticipant ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"
+                  }`}
+                >
+                  {editingParticipant ? <Pencil className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">Tambah Peserta Baru</h2>
-                  <p className="text-xs text-slate-500">Lengkapi kolom data sesuai konfigurasi aktif</p>
+                  <h2 className="text-base font-bold text-slate-900">
+                    {editingParticipant ? `Ubah Data: ${editingParticipant.name}` : "Tambah Peserta Baru"}
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    {editingParticipant
+                      ? "Perbarui nilai, biodata, atau status kelulusan peserta ini"
+                      : "Lengkapi kolom data sesuai konfigurasi aktif"}
+                  </p>
                 </div>
               </div>
               <button
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setEditingParticipant(null);
+                }}
                 className="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-200/70 transition"
               >
                 <X className="w-5 h-5" />
@@ -400,7 +449,10 @@ export default function ParticipantsPage() {
             </div>
 
             {/* Form Input Modal - Murni Dinamis dari validationFields */}
-            <form onSubmit={handleAddParticipant} className="p-5 sm:p-6 space-y-4 text-xs sm:text-sm overflow-y-auto">
+            <form onSubmit={handleSaveParticipant} className="p-5 sm:p-6 space-y-4 text-xs sm:text-sm overflow-y-auto">
+              {/* Hidden ID jika sedang edit */}
+              {editingParticipant && <input type="hidden" name="id" value={editingParticipant.id} />}
+
               {validationFields.length === 0 ? (
                 <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-amber-900 text-xs">
                   Belum ada kolom yang didaftarkan pada menu Pengaturan Kolom. Silakan tambahkan kolom terlebih dahulu.
@@ -414,20 +466,28 @@ export default function ParticipantsPage() {
                         <KeyRound className="w-3.5 h-3.5 text-blue-600" />
                         Kunci Verifikasi (Input Cek Depan)
                       </span>
-                      {verificationFields.map((f) => (
-                        <div key={f.id}>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">
-                            {f.label} ({f.fieldKey}) {f.isRequired && <span className="text-rose-500">*</span>}
-                          </label>
-                          <input
-                            name={`val_${f.fieldKey}`}
-                            required={f.isRequired}
-                            type={f.fieldType === "date" ? "date" : f.fieldType === "number" ? "number" : "text"}
-                            placeholder={f.placeholder || `Isi ${f.label}`}
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm outline-none focus:ring-2 focus:ring-blue-600"
-                          />
-                        </div>
-                      ))}
+                      {verificationFields.map((f) => {
+                        const defaultValue =
+                          editingValJson[f.fieldKey] !== undefined
+                            ? editingValJson[f.fieldKey]
+                            : "";
+
+                        return (
+                          <div key={f.id}>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                              {f.label} ({f.fieldKey}) {f.isRequired && <span className="text-rose-500">*</span>}
+                            </label>
+                            <input
+                              name={`val_${f.fieldKey}`}
+                              required={f.isRequired}
+                              defaultValue={defaultValue}
+                              type={f.fieldType === "date" ? "date" : f.fieldType === "number" ? "number" : "text"}
+                              placeholder={f.placeholder || `Isi ${f.label}`}
+                              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm outline-none focus:ring-2 focus:ring-blue-600"
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
@@ -438,20 +498,32 @@ export default function ParticipantsPage() {
                         <FileText className="w-3.5 h-3.5 text-emerald-600" />
                         Biodata / Informasi Tambahan (Tampil di Hasil)
                       </span>
-                      {displayFields.map((f) => (
-                        <div key={f.id}>
-                          <label className="block text-xs font-semibold text-slate-700 mb-1">
-                            {f.label} ({f.fieldKey}) {f.isRequired && <span className="text-rose-500">*</span>}
-                          </label>
-                          <input
-                            name={`val_${f.fieldKey}`}
-                            required={f.isRequired}
-                            type={f.fieldType === "date" ? "date" : f.fieldType === "number" ? "number" : "text"}
-                            placeholder={f.placeholder || `Isi ${f.label}`}
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm outline-none focus:ring-2 focus:ring-emerald-600"
-                          />
-                        </div>
-                      ))}
+                      {displayFields.map((f) => {
+                        const defaultValue =
+                          editingValJson[f.fieldKey] !== undefined
+                            ? editingValJson[f.fieldKey]
+                            : f.fieldKey === "nama" || f.fieldKey === "name"
+                            ? editingParticipant?.name || ""
+                            : f.fieldKey === "formasi" || f.fieldKey === "position"
+                            ? editingParticipant?.position || ""
+                            : "";
+
+                        return (
+                          <div key={f.id}>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                              {f.label} ({f.fieldKey}) {f.isRequired && <span className="text-rose-500">*</span>}
+                            </label>
+                            <input
+                              name={`val_${f.fieldKey}`}
+                              required={f.isRequired}
+                              defaultValue={defaultValue}
+                              type={f.fieldType === "date" ? "date" : f.fieldType === "number" ? "number" : "text"}
+                              placeholder={f.placeholder || `Isi ${f.label}`}
+                              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm outline-none focus:ring-2 focus:ring-emerald-600"
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </>
@@ -464,7 +536,7 @@ export default function ParticipantsPage() {
                   </label>
                   <select
                     name="status"
-                    defaultValue="LULUS"
+                    defaultValue={editingParticipant?.status || "LULUS"}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 outline-none text-xs sm:text-sm bg-white font-bold"
                   >
                     <option value="LULUS" className="text-emerald-700 font-bold">LULUS</option>
@@ -480,6 +552,7 @@ export default function ParticipantsPage() {
                     name="score"
                     type="number"
                     step="0.1"
+                    defaultValue={editingParticipant?.score !== null && editingParticipant?.score !== undefined ? editingParticipant.score : ""}
                     placeholder="85.5"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 outline-none text-xs sm:text-sm font-medium"
                   />
@@ -493,6 +566,7 @@ export default function ParticipantsPage() {
                 <textarea
                   name="notes"
                   rows={2}
+                  defaultValue={editingParticipant?.notes || ""}
                   placeholder="Contoh: Wajib hadir verifikasi berkas fisik pada 15 September 2026 di Aula Utama..."
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 outline-none text-xs sm:text-sm"
                 />
@@ -502,7 +576,10 @@ export default function ParticipantsPage() {
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setEditingParticipant(null);
+                  }}
                   className="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 font-bold text-slate-700 text-xs sm:text-sm transition cursor-pointer"
                 >
                   Batal
@@ -510,7 +587,11 @@ export default function ParticipantsPage() {
                 <button
                   type="submit"
                   disabled={submitting || validationFields.length === 0}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white font-bold rounded-xl text-xs sm:text-sm transition shadow-md shadow-amber-600/20 disabled:opacity-70 cursor-pointer"
+                  className={`flex items-center gap-2 px-5 py-2.5 active:scale-[0.98] text-white font-bold rounded-xl text-xs sm:text-sm transition shadow-md disabled:opacity-70 cursor-pointer ${
+                    editingParticipant
+                      ? "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20"
+                      : "bg-amber-600 hover:bg-amber-700 shadow-amber-600/20"
+                  }`}
                 >
                   {submitting ? (
                     <>
@@ -518,7 +599,7 @@ export default function ParticipantsPage() {
                       <span>Menyimpan...</span>
                     </>
                   ) : (
-                    <span>Simpan Peserta</span>
+                    <span>{editingParticipant ? "Simpan Perubahan" : "Simpan Peserta"}</span>
                   )}
                 </button>
               </div>

@@ -10,9 +10,10 @@ export async function getParticipants() {
 }
 
 export async function createParticipant(formData: FormData) {
+  const id = formData.get("id") as string | null;
   const status = (formData.get("status") as string) || "LULUS";
   const scoreStr = formData.get("score") as string;
-  const score = scoreStr ? parseFloat(scoreStr) : null;
+  const score = scoreStr && scoreStr.trim() !== "" ? parseFloat(scoreStr) : null;
   const notes = (formData.get("notes") as string) || null;
   const validationDataStr = (formData.get("validationData") as string) || "{}";
 
@@ -21,32 +22,47 @@ export async function createParticipant(formData: FormData) {
     valObj = JSON.parse(validationDataStr);
   } catch {}
 
-  // Ambil nama dari dynamic field 'nama' / 'name' atau fallback ke field pertama
+  // Ambil nama dari dynamic field 'nama' / 'name' atau fallback
   const name =
     valObj.nama ||
     valObj.name ||
     valObj.nama_lengkap ||
     valObj.nama_peserta ||
-    formData.get("name") ||
+    Object.values(valObj)[0] ||
     "Peserta";
 
   const position =
     valObj.formasi ||
     valObj.position ||
     valObj.jurusan ||
-    formData.get("position") ||
     null;
 
-  await prisma.participant.create({
-    data: {
-      name: String(name),
-      position: position ? String(position) : null,
-      status,
-      score,
-      notes,
-      validationData: validationDataStr,
-    },
-  });
+  if (id && id.trim() !== "") {
+    // Mode Update / Edit Peserta
+    await prisma.participant.update({
+      where: { id },
+      data: {
+        name: String(name),
+        position: position ? String(position) : null,
+        status,
+        score: score !== null && !isNaN(score) ? score : null,
+        notes,
+        validationData: validationDataStr,
+      },
+    });
+  } else {
+    // Mode Tambah Peserta Baru
+    await prisma.participant.create({
+      data: {
+        name: String(name),
+        position: position ? String(position) : null,
+        status,
+        score: score !== null && !isNaN(score) ? score : null,
+        notes,
+        validationData: validationDataStr,
+      },
+    });
+  }
 
   revalidatePath("/admin/participants");
   revalidatePath("/");
