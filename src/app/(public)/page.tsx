@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import DynamicSearchForm from "@/components/public/DynamicSearchForm";
 import ResultCard from "@/components/public/ResultCard";
+import ClosedAnnouncementCard from "@/components/public/ClosedAnnouncementCard";
 import { getAppSettings } from "@/actions/setting.actions";
 import { getPublicVerificationFields } from "@/actions/field.actions";
 import { AppSettingType, ValidationFieldType, SearchResultType } from "@/types";
@@ -10,7 +11,6 @@ import {
   Award,
   ShieldCheck,
   Lock,
-  Clock,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -19,19 +19,22 @@ export default function PublicPage() {
   const [fields, setFields] = useState<ValidationFieldType[]>([]);
   const [searchResult, setSearchResult] = useState<SearchResultType | null>(null);
   const [loading, setLoading] = useState(true);
+  const [nowTimestamp, setNowTimestamp] = useState<number>(Date.now());
+
+  const loadData = useCallback(async () => {
+    try {
+      const [s, f] = await Promise.all([getAppSettings(), getPublicVerificationFields()]);
+      if (s) setSetting(s as AppSettingType);
+      setFields(f as ValidationFieldType[]);
+      setNowTimestamp(Date.now());
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [s, f] = await Promise.all([getAppSettings(), getPublicVerificationFields()]);
-        if (s) setSetting(s as AppSettingType);
-        setFields(f as ValidationFieldType[]);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+    loadData();
+  }, [loadData]);
 
   if (loading) {
     return (
@@ -42,20 +45,18 @@ export default function PublicPage() {
     );
   }
 
-  // Format Waktu Buka
-  let formattedOpenTime = "";
-  if (setting?.announcementDate) {
-    try {
-      formattedOpenTime = new Date(setting.announcementDate).toLocaleString("id-ID", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }) + " WIB";
-    } catch {}
+  // Evaluasi Apakah Pengumuman Boleh Diakses Saat Ini
+  const isClosedExplicitly = setting?.announcementMode === "CLOSED" || !setting?.isAnnouncementOpen;
+  let isScheduledNotYet = false;
+
+  if (setting?.announcementMode === "SCHEDULED" && setting?.announcementDate) {
+    const targetTime = new Date(setting.announcementDate).getTime();
+    if (nowTimestamp < targetTime) {
+      isScheduledNotYet = true;
+    }
   }
+
+  const isAccessible = !isClosedExplicitly && !isScheduledNotYet;
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-gradient-to-b from-blue-50/70 via-slate-50 to-indigo-50/40 text-slate-900 relative selection:bg-blue-600 selection:text-white">
@@ -79,8 +80,14 @@ export default function PublicPage() {
                 {setting?.appName || "PORTAL PENGUMUMAN"}
               </h1>
               <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
-                <span className="truncate">Pengumuman Resmi & Terverifikasi</span>
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    isAccessible ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                  } shrink-0`}
+                ></span>
+                <span className="truncate">
+                  {isAccessible ? "Pengumuman Resmi & Terverifikasi" : "Portal Terjadwal / Ditutup"}
+                </span>
               </span>
             </div>
           </div>
@@ -108,11 +115,22 @@ export default function PublicPage() {
           </p>
         </div>
 
-        {/* Dynamic Search Form or Result Card */}
+        {/* LOGIKA KONDISIONAL FORM: TAMPILKAN ATAU SEMBUNYIKAN FORM */}
         <div className="w-full">
-          {searchResult?.success ? (
+          {!isAccessible ? (
+            /* Jika Ditutup atau Belum Waktunya -> Sembunyikan Form & Tampilkan Card Informasi */
+            <ClosedAnnouncementCard
+              setting={setting}
+              onTimeReached={() => {
+                setNowTimestamp(Date.now());
+                loadData();
+              }}
+            />
+          ) : searchResult?.success ? (
+            /* Jika Berhasil Cek Hasil -> Tampilkan Kartu Sertifikat Kelulusan */
             <ResultCard result={searchResult} onReset={() => setSearchResult(null)} />
           ) : (
+            /* Jika Pengumuman Dibuka -> Tampilkan Formulir Pencarian */
             <DynamicSearchForm
               fields={fields}
               setting={setting}
