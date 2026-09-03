@@ -105,7 +105,7 @@ npm run db:seed
 ```
 
 > **Default Akun Admin:**
-> - **URL Admin:** `http://domainanda.com/admin/login`
+> - **URL Admin:** `http://domainanda.com/login`
 > - **Username:** `admin`
 > - **Password:** `admin` *(Segera ubah setelah login pada menu Ubah Password Admin)*
 

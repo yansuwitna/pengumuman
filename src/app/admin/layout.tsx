@@ -1,5 +1,6 @@
 import Sidebar from "@/components/admin/Sidebar";
 import { getAdminSession } from "@/actions/auth.actions";
+import { redirect } from "next/navigation";
 
 export default async function AdminLayout({
   children,
@@ -8,8 +9,9 @@ export default async function AdminLayout({
 }) {
   const session = await getAdminSession();
 
+  // Jika belum login saat mengakses seluruh halaman admin, redirect langsung ke /login
   if (!session) {
-    return <div className="min-h-screen bg-slate-900">{children}</div>;
+    redirect("/login");
   }
 
   return (

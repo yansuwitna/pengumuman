@@ -85,7 +85,7 @@ export default function PublicPage() {
           </div>
 
           <Link
-            href="/admin/settings"
+            href="/admin"
             className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 active:scale-95 transition-all shadow-xs shrink-0"
           >
             <Lock className="w-3.5 h-3.5 text-blue-600" />

@@ -54,7 +54,7 @@ export async function loginAdmin(formData: FormData) {
 
 export async function logoutAdmin() {
   cookies().delete(SESSION_COOKIE_NAME);
-  redirect("/admin/login");
+  redirect("/login");
 }
 
 export async function getAdminSession() {

@@ -92,7 +92,7 @@ npm run dev
 
 Buka browser dan akses URL berikut:
 - 🌐 **Halaman Publik (Pengumuman):** [http://localhost:3000](http://localhost:3000)
-- 🔐 **Halaman Login Admin:** [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
+- 🔐 **Halaman Login Admin:** [http://localhost:3000/login](http://localhost:3000/login)
 
 ---
 
@@ -102,7 +102,7 @@ Saat pertama kali database diinisialisasi, sistem secara otomatis membuat akun a
 
 | Keterangan | Nilai Default |
 | :--- | :--- |
-| **URL Login** | `http://localhost:3000/admin/login` |
+| **URL Login** | `http://localhost:3000/login` |
 | **Username** | `admin` |
 | **Password** | `admin` |
 
@@ -141,10 +141,207 @@ pks/
 
 ---
 
-## ☁️ Panduan Deployment di VPS (Debian / Ubuntu)
+## ☁️ Panduan Instalasi & Deployment di VPS (Debian / Ubuntu)
 
-Untuk panduan lengkap men-deploy aplikasi ini di server VPS menggunakan **PM2**, **Nginx Reverse Proxy**, dan **SSL Gratis (Certbot)**, silakan baca dokumentasi khusus:
-👉 **[Lihat Panduan Deployment VPS (instalasi.md)](instalasi.md)**
+Panduan ini menjelaskan langkah demi langkah cara men-deploy aplikasi pada server VPS menggunakan **NVM (Node Version Manager)**, **PM2**, **Nginx Reverse Proxy**, dan **SSL Gratis (Let's Encrypt)**.
+
+---
+
+### 1. Update Sistem & Install Paket Dasar
+Masuk ke server VPS via SSH, lalu perbarui repositori dan pasang paket yang dibutuhkan:
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y curl git ufw nginx build-essential
+```
+
+Aktifkan firewall UFW:
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 'Nginx Full'
+sudo ufw --force enable
+```
+
+---
+
+### 2. Install Node.js menggunakan NVM (Node Version Manager)
+Menggunakan **NVM** memudahkan instalasi dan pengelolaan versi Node.js tanpa konflik hak akses `root`:
+
+```bash
+# 1. Download dan pasang NVM
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+
+# 2. Muat konfigurasi NVM ke sesi shell aktif
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+source ~/.bashrc
+
+# 3. Install Node.js LTS (disarankan versi 20.x)
+nvm install 20
+nvm use 20
+nvm alias default 20
+
+# 4. Verifikasi instalasi Node.js & NPM
+node -v
+npm -v
+```
+
+---
+
+### 3. Install PM2 (Process Manager)
+PM2 bertugas menjaga aplikasi tetap hidup di latar belakang (*background*) dan otomatis *restart* jika terjadi *crash* atau server *reboot*:
+
+```bash
+npm install -g pm2
+```
+
+---
+
+### 4. Setup Direktori & Clone Proyek
+Buat folder aplikasi pada direktori web server (contoh: `/var/www/pks`) dan berikan hak akses:
+
+```bash
+sudo mkdir -p /var/www/pks
+sudo chown -R $USER:$USER /var/www/pks
+cd /var/www/pks
+
+# Clone repository ke folder saat ini
+git clone <URL_REPOSITORY_ANDA> .
+```
+
+---
+
+### 5. Install Dependensi & Konfigurasi Database
+Di dalam folder `/var/www/pks`, lakukan instalasi dependensi dan inisialisasi database SQLite:
+
+```bash
+# 1. Install seluruh dependensi
+npm install
+
+# 2. Buat file .env untuk database SQLite
+cat << 'EOF' > .env
+DATABASE_URL="file:./dev.db"
+EOF
+
+# 3. Sinkronkan tabel SQLite & generate Prisma Client
+npx prisma db push
+npx prisma generate
+
+# 4. Jalankan Seeder data awal & akun admin default
+npm run db:seed
+```
+
+> 🔑 **Akun Admin Default:**
+> - URL Admin: `http://domainanda.com/login`
+> - Username: `admin` | Password: `admin` *(Segera ubah setelah login!)*
+
+---
+
+### 6. Build Aplikasi Next.js untuk Production
+Kompilasi aplikasi untuk performa optimal di lingkungan produksi:
+
+```bash
+npm run build
+```
+
+---
+
+### 7. Jalankan Aplikasi Menggunakan PM2
+Jalankan aplikasi menggunakan file konfigurasi `ecosystem.config.js`:
+
+```bash
+# Start aplikasi dengan PM2
+pm2 start ecosystem.config.js
+
+# Simpan daftar proses yang aktif
+pm2 save
+
+# Daftarkan PM2 ke system startup agar otomatis aktif saat VPS reboot
+pm2 startup
+```
+*(Jika terminal mencetak baris perintah `sudo env PATH=...`, salin dan jalankan baris tersebut di terminal).*
+
+#### 📌 Perintah Manajemen PM2 yang Sering Digunakan:
+- `pm2 status` — Melihat status aplikasi.
+- `pm2 logs pks-pengumuman` — Melihat log realtime / error log.
+- `pm2 restart pks-pengumuman` — Me-restart aplikasi.
+- `pm2 stop pks-pengumuman` — Menghentikan aplikasi.
+
+---
+
+### 8. Konfigurasi Nginx (Reverse Proxy)
+Buat file konfigurasi Nginx untuk mengarahkan domain/subdomain ke port `3000`:
+
+```bash
+sudo nano /etc/nginx/sites-available/pks-pengumuman
+```
+
+Salin konfigurasi berikut *(sesuaikan `pengumuman.domainanda.com` dengan nama domain Anda)*:
+
+```nginx
+server {
+    listen 80;
+    server_name pengumuman.domainanda.com;
+
+    # Batas ukuran upload file Excel yang diizinkan
+    client_max_body_size 20M;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Aktifkan konfigurasi dan restart Nginx:
+```bash
+# Aktifkan konfigurasi Nginx
+sudo ln -s /etc/nginx/sites-available/pks-pengumuman /etc/nginx/sites-enabled/
+
+# Hapus konfigurasi default jika ada
+sudo rm -f /etc/nginx/sites-enabled/default
+
+# Uji konfigurasi Nginx
+sudo nginx -t
+
+# Restart layanan Nginx
+sudo systemctl restart nginx
+```
+
+---
+
+### 9. Pasang SSL Gratis (HTTPS) dengan Certbot
+Amankan domain Anda dengan sertifikat SSL resmi dari Let's Encrypt:
+
+```bash
+# Install Certbot & plugin Nginx
+sudo apt install -y certbot python3-certbot-nginx
+
+# Request dan terapkan sertifikat SSL
+sudo certbot --nginx -d pengumuman.domainanda.com
+```
+Ikuti petunjuk di layar (masukkan email & setujui persetujuan). Certbot akan otomatis mengatur pengalihan (redirect) dari HTTP ke HTTPS.
+
+---
+
+### 10. Prosedur Update Aplikasi di Masa Depan
+Jika terdapat pembaruan kode baru, jalankan perintah berikut di VPS:
+
+```bash
+cd /var/www/pks
+git pull
+npm install
+npx prisma db push
+npm run build
+pm2 restart pks-pengumuman
+```
 
 ---
 

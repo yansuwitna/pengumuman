@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { logoutAdmin } from "@/actions/auth.actions";
 import { showAlert } from "@/lib/alert";
 import {
+  LayoutDashboard,
   Sliders,
   ListFilter,
   Users,
@@ -27,6 +28,12 @@ export default function Sidebar({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const links = [
+    {
+      href: "/admin",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      color: "text-sky-400",
+    },
     {
       href: "/admin/settings",
       label: "Nama Kegiatan & App",
