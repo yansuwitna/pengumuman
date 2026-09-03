@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-export const DEFAULT_INITIAL_FIELDS = [
+const DEFAULT_INITIAL_FIELDS = [
   {
     fieldKey: "nama",
     label: "Nama Lengkap Peserta",
@@ -72,7 +72,7 @@ export const DEFAULT_INITIAL_FIELDS = [
   },
 ];
 
-export const DEFAULT_INITIAL_SETTING = {
+const DEFAULT_INITIAL_SETTING = {
   id: "default",
   appName: "PORTAL PENGUMUMAN",
   activityName: "Hasil Seleksi Penerimaan Calon Pegawai 2026",

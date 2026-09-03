@@ -151,7 +151,7 @@ export default function ParticipantsPage() {
         const wb = XLSX.read(bstr, { type: "binary" });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws);
+        const data = XLSX.utils.sheet_to_json<Record<string, any>>(ws);
 
         if (data.length === 0) {
           showAlert.error("File Kosong", "File Excel tidak memiliki data peserta.");

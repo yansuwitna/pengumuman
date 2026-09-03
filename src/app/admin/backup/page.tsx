@@ -21,6 +21,8 @@ import {
   ListFilter,
   Sliders,
   Info,
+  Lock,
+  Unlock,
 } from "lucide-react";
 
 export default function BackupMaintenancePage() {
@@ -36,6 +38,8 @@ export default function BackupMaintenancePage() {
 
   // Reset state
   const [resetting, setResetting] = useState(false);
+  const [hasBackedUp, setHasBackedUp] = useState(false);
+  const [backupTime, setBackupTime] = useState<string | null>(null);
 
   const loadCurrentStats = async () => {
     try {
@@ -71,9 +75,14 @@ export default function BackupMaintenancePage() {
       downloadAnchor.click();
       downloadAnchor.remove();
 
+      // Tandai bahwa backup telah berhasil dilakukan
+      setHasBackedUp(true);
+      const timeNow = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      setBackupTime(timeNow);
+
       Toast.fire({
         icon: "success",
-        title: "File backup berhasil diunduh!",
+        title: "File backup berhasil diunduh! Fitur reset kini terbuka.",
       });
     } catch (err: any) {
       showAlert.error("Gagal Backup", "Terjadi kesalahan saat mengekspor data.");
@@ -146,19 +155,33 @@ export default function BackupMaintenancePage() {
     }
   };
 
-  // 4. Process Factory Reset (Hapus Semua Data & Setelan Awal Kecuali Admin)
+  // 4. Process Factory Reset (Hanya Berhasil Jika Sudah Klik Backup!)
   const handleResetToDefault = async () => {
+    // SYARAT MUTLAK: Wajib sudah klik backup terlebih dahulu
+    if (!hasBackedUp) {
+      const askBackup = await showAlert.confirm(
+        "🔒 Wajib Backup Terlebih Dahulu!",
+        "Demi keamanan data, Anda WAJIB mengunduh file cadangan (backup) terlebih dahulu sebelum dapat menghapus data atau mereset aplikasi. Ingin unduh backup sekarang?",
+        "Ya, Unduh Backup Sekarang"
+      );
+
+      if (askBackup.isConfirmed) {
+        await handleDownloadBackup();
+      }
+      return;
+    }
+
     const promptRes = await showAlert.promptConfirm(
-      "⚠️ PERINGATAN: RESET DATA DATABASE",
+      "⚠️ PERINGATAN TERAKHIR: RESET DATA",
       `<div class="text-xs text-left text-slate-600 space-y-2">
-        <p class="font-bold text-rose-600 text-sm">Tindakan ini tidak dapat dibatalkan!</p>
+        <p class="font-bold text-rose-600 text-sm">Backup telah diverifikasi. Tindakan ini akan mengosongkan seluruh data!</p>
         <ul class="list-disc pl-4 space-y-1">
           <li><strong>Semua data peserta (${stats?.totalParticipants || 0} orang)</strong> akan dihapus permanen.</li>
           <li>Kolom validasi akan dikembalikan ke setelan kolom default.</li>
           <li>Pengaturan nama aplikasi & kegiatan akan kembali ke setelan awal.</li>
           <li><span class="text-emerald-700 font-bold">🛡️ Akun Administrator TETAP AMAN</span> (Username & Password Anda tidak akan dihapus).</li>
         </ul>
-        <p class="pt-2 text-slate-800 font-semibold">Ketik kata <strong>RESET</strong> di bawah ini untuk melanjutkan:</p>
+        <p class="pt-2 text-slate-800 font-semibold">Ketik kata <strong>RESET</strong> di bawah ini untuk mengonfirmasi:</p>
       </div>`,
       "RESET"
     );
@@ -170,6 +193,8 @@ export default function BackupMaintenancePage() {
       const res = await resetDatabaseToDefault();
       if (res.success) {
         await showAlert.success("Reset Berhasil!", res.message);
+        setHasBackedUp(false);
+        setBackupTime(null);
         loadCurrentStats();
       } else {
         showAlert.error("Gagal Reset", res.message);
@@ -408,25 +433,73 @@ export default function BackupMaintenancePage() {
           </div>
         </div>
 
+        {/* Syarat Keamanan Status Banner */}
+        <div
+          className={`p-4 rounded-2xl border flex items-center justify-between gap-3 text-xs ${
+            hasBackedUp
+              ? "bg-emerald-100/90 border-emerald-300 text-emerald-900"
+              : "bg-amber-100/90 border-amber-300 text-amber-900"
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            {hasBackedUp ? (
+              <Unlock className="w-5 h-5 text-emerald-600 shrink-0" />
+            ) : (
+              <Lock className="w-5 h-5 text-amber-600 shrink-0" />
+            )}
+            <div>
+              {hasBackedUp ? (
+                <p className="font-bold">
+                  ✅ Syarat Terpenuhi: Backup telah diunduh pukul {backupTime} WIB. Fitur reset kini aktif.
+                </p>
+              ) : (
+                <p className="font-bold">
+                  🔒 Fitur Terkunci: Anda WAJIB mengklik tombol &quot;Unduh File Backup JSON&quot; di atas sebelum dapat melakukan reset!
+                </p>
+              )}
+            </div>
+          </div>
+
+          {!hasBackedUp && (
+            <button
+              onClick={handleDownloadBackup}
+              disabled={downloading}
+              className="shrink-0 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] flex items-center gap-1.5 transition shadow-sm cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Backup Sekarang</span>
+            </button>
+          )}
+        </div>
+
         <div className="pt-4 border-t border-rose-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[11px] text-rose-800">
-            *Anda akan diminta mengetik kata konfirmasi <strong className="font-mono bg-rose-200/80 px-1.5 py-0.5 rounded">RESET</strong> sebelum sistem mengeksekusi penghapusan.
+            *Setelah backup diunduh, Anda akan diminta mengetik kata konfirmasi <strong className="font-mono bg-rose-200/80 px-1.5 py-0.5 rounded">RESET</strong> sebelum data dihapus.
           </p>
 
           <button
             onClick={handleResetToDefault}
             disabled={resetting}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white font-bold text-xs sm:text-sm transition shadow-md shadow-rose-600/20 disabled:opacity-60 cursor-pointer shrink-0"
+            className={`w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-bold text-xs sm:text-sm transition shadow-md shrink-0 cursor-pointer ${
+              hasBackedUp
+                ? "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/20 active:scale-[0.98]"
+                : "bg-rose-300 text-rose-800 hover:bg-rose-400 cursor-pointer"
+            }`}
           >
             {resetting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Sedang Mereset Data...</span>
               </>
-            ) : (
+            ) : hasBackedUp ? (
               <>
                 <RotateCcw className="w-4 h-4" />
                 <span>Hapus & Reset ke Setelan Awal</span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-4 h-4" />
+                <span>Hapus & Reset (Wajib Backup Dahulu)</span>
               </>
             )}
           </button>
